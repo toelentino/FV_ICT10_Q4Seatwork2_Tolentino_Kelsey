@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade 10 Classmates System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="container">
+        <section class="card">
+            <h1>Grade 10 Classmates System</h1>
+            <p class="subtitle">Add and view your classmates with a clean, lively design!</p>
+
+            <form id="classmate-form" class="form-grid">
+                <input type="text" id="name" placeholder="Name" required>
+                <input type="text" id="section" placeholder="Section (e.g. SAPPHIRE-1)" required>
+                <input type="text" id="favorite_subject" placeholder="Favorite Subject" required>
+            </form>
+
+            <div class="button-row">
+                <button id="add-btn" class="btn btn-primary">Add Classmate</button>
+                <button id="show-btn" class="btn btn-secondary">Show Class List</button>
+            </div>
+
+            <p id="message" class="message"></p>
+        </section>
+
+        <section class="card list-card">
+            <h2>Classmate List</h2>
+            <ul id="class-list"></ul>
+        </section>
+    </main>
+
+    <script>
+        const addBtn = document.getElementById("add-btn");
+        const showBtn = document.getElementById("show-btn");
+        const classList = document.getElementById("class-list");
+        const message = document.getElementById("message");
+
+        function renderClassmates(classmates) {
+            classList.innerHTML = "";
+            classmates.forEach((classmate) => {
+                const li = document.createElement("li");
+                li.textContent = classmate.introduction;
+                classList.appendChild(li);
+            });
+        }
+
+        async function fetchClassmates() {
+            const response = await fetch("/classmates");
+            const data = await response.json();
+            renderClassmates(data.classmates);
+            message.textContent = "Class list loaded successfully.";
+        }
+
+        showBtn.addEventListener("click", async () => {
+            try {
+                await fetchClassmates();
+            } catch (error) {
+                message.textContent = "Could not load class list.";
+            }
+        });
+
+        addBtn.addEventListener("click", async () => {
+            const name = document.getElementById("name").value.trim();
+            const section = document.getElementById("section").value.trim();
+            const favoriteSubject = document.getElementById("favorite_subject").value.trim();
+
+            if (!name || !section || !favoriteSubject) {
+                message.textContent = "Please complete all fields before adding.";
+                return;
+            }
+
+            try {
+                const response = await fetch("/add_classmate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        name: name,
+                        section: section,
+                        favorite_subject: favoriteSubject,
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    message.textContent = errorData.error || "Unable to add classmate.";
+                    return;
+                }
+
+                const data = await response.json();
+                renderClassmates(data.classmates);
+                message.textContent = "Classmate added successfully.";
+                document.getElementById("classmate-form").reset();
+            } catch (error) {
+                message.textContent = "Something went wrong while adding classmate.";
+            }
+        });
+    </script>
+</body>
+</html>
